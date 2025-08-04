@@ -1,104 +1,164 @@
-import React, { useState } from 'react';
-import * as yup from 'yup';
-import { useForm } from 'react-hook-form';
-import { Helmet } from 'react-helmet';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
 
+import { Helmet } from "react-helmet";
 import { Card } from "primereact/card";
-import { Messages } from "primereact/messages";
 import { Button } from "primereact/button";
-import { Link } from "react-router-dom";
+import { Messages } from "primereact/messages";
+import { Link, useHistory } from "react-router-dom";
 
-import LocaleToggle from './../locale/LocaleToggle';
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../firebase";
 
-import axios from './../../Axios';
-import { setItem } from "./../../Helpers";
-import { authApiEndpoints } from "./../../API";
-import { useTracked } from './../../Store';
+import LocaleToggle from "./../locale/LocaleToggle";
 
 const loginValidationSchema = yup.object().shape({
-  email: yup.string().required('Email field is required.').email('Email must be a valid email.'),
-  password: yup.string().required('Password field is required.').min(6, 'Must be 6 characters.'),
+  email: yup.string().required("Email is required").email("Invalid email"),
+  password: yup.string().required("Password is required"),
 });
 
-let messages; // For alert message
+let messages;
 
-const Login = (props) => {
-
-  const [state, setState] = useTracked();
+const Login = () => {
   const [submitting, setSubmitting] = useState(false);
+  const history = useHistory(); // ✅ Correct for React Router v5
 
-  // console.log('Login', state);
-
-  // Login form handle
-  const { register, handleSubmit, errors } = useForm({
-    validationSchema: loginValidationSchema
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(loginValidationSchema),
   });
 
-  const submitLogin = (data) => {
-    messages.clear(); // Clear existing messages
+  const submitLogin = async (data) => {
     setSubmitting(true);
-    axios.post(authApiEndpoints.login, JSON.stringify(data))
-      .then(response => {
-        // console.log('success');
-        // console.log(response.data);
+    messages.clear();
 
-        if (response.status === 200) {
-          setItem('expires_in', response.data.expires_in);
-          setItem('access_token', response.data.access_token);
-          setItem('token_created', response.data.token_created);
+    try {
+      const result = await signInWithEmailAndPassword(
+        auth,
+        data.email,
+        data.password
+      );
 
-          setState(prev => ({ ...prev, user: response.data.user }));
+      const tokenResult = await result.user.getIdTokenResult();
 
-          props.location.state === undefined ? props.history.replace('/dashboard') : props.history.replace(props.location.state.from.pathname);
-        }
+      const userData = {
+        access_token: tokenResult.token,
+        token_created: tokenResult.issuedAtTime,
+        expires_in: tokenResult.expirationTime,
+        email: result.user.email,
+        name: result.user.displayName || result.user.email.split("@")[0], // fallback
+        uid: result.user.uid,
+      };
 
-      })
-      .catch(error => {
-        // console.log('error', error.response);
+      localStorage.setItem(
+        "access_token",
+        JSON.stringify(userData.access_token)
+      );
+      localStorage.setItem(
+        "token_created",
+        JSON.stringify(userData.token_created)
+      );
+      localStorage.setItem("expires_in", JSON.stringify(userData.expires_in));
+      localStorage.setItem("user", JSON.stringify(userData));
 
-        if (error.response && error.response.status === 422) {
-          messages.show({ severity: 'error', detail: 'Incorrect email or password.', sticky: true });
-        }
-        else {
-          messages.show({ severity: 'error', detail: 'Something went wrong. Try again.', sticky: true });
-        }
-        setSubmitting(false);
-      })
+      messages.show({
+        severity: "success",
+        detail: "Login successful!",
+        sticky: true,
+      });
+
+      reset();
+
+      setTimeout(() => {
+        history.push("/dashboard");
+      }, 1000);
+    } catch (error) {
+      console.error("Login Error:", error.message);
+      messages.show({
+        severity: "error",
+        detail: error.message || "Login failed. Try again.",
+        sticky: true,
+      });
+    }
+
+    setSubmitting(false);
   };
+
+  
+
+
 
   return (
     <div>
-      <Helmet title='Login' />
-      <div className="p-grid p-nogutter p-align-center p-justify-center" style={{ height: '95vh' }}>
-        <Card className="p-sm-12 p-md-6 p-lg-4" style={{ borderRadius: 5, minHeight: 65 }}>
+      <Helmet title="Login" />
+      <div
+        className="p-grid p-nogutter p-align-center p-justify-center"
+        style={{ height: "95vh" }}
+      >
+        <Card
+          className="p-sm-12 p-md-6 p-lg-4"
+          style={{ borderRadius: 5, minHeight: 65 }}
+        >
           <div className="p-col-12 p-fluid">
-            <Messages ref={(el) => messages = el} />
+            <Messages ref={(el) => (messages = el)} />
           </div>
           <div className="p-col-12">
-            <div className="p-card-title p-grid p-nogutter p-justify-between">Login <LocaleToggle /></div>
-            <div className="p-card-subtitle">Enter login credentials</div>
+            <div className="p-card-title p-grid p-nogutter p-justify-between">
+              Login
+              <LocaleToggle />
+            </div>
+            <div className="p-card-subtitle">Enter your credentials</div>
           </div>
 
           <form onSubmit={handleSubmit(submitLogin)}>
             <div className="p-col-12 p-fluid">
               <div className="p-inputgroup">
-                <span className="p-inputgroup-addon"><i className="pi pi-envelope" /></span>
-                <input type="text" name="email" placeholder={'Email'} ref={register} className="p-inputtext p-component p-filled" />
+                <span className="p-inputgroup-addon">
+                  <i className="pi pi-envelope" />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Email"
+                  {...register("email")}
+                  className="p-inputtext p-component"
+                />
               </div>
               <p className="text-error">{errors.email?.message}</p>
             </div>
+
             <div className="p-col-12 p-fluid">
               <div className="p-inputgroup">
-                <span className="p-inputgroup-addon"><i className="pi pi-key" /></span>
-                <input type="password" name="password" placeholder={'Password'} ref={register} className="p-inputtext p-component p-filled" />
+                <span className="p-inputgroup-addon">
+                  <i className="pi pi-key" />
+                </span>
+                <input
+                  type="password"
+                  placeholder="Password"
+                  {...register("password")}
+                  className="p-inputtext p-component"
+                />
               </div>
               <p className="text-error">{errors.password?.message}</p>
             </div>
+
             <div className="p-col-12 p-fluid">
-              <Button disabled={submitting} type="submit" label={'Sign In'} icon="pi pi-sign-in" className="p-button-raised" />
+              <Button
+                disabled={submitting}
+                type="submit"
+                label="Login"
+                icon="pi pi-sign-in"
+                className="p-button-raised"
+              />
             </div>
+
             <div className="p-grid p-nogutter p-col-12 p-justify-center">
-              <Link to="/register">Register</Link>
+              <Link to="/register">Don't have an account? Register</Link>
             </div>
           </form>
         </Card>

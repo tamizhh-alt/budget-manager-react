@@ -1,31 +1,31 @@
-import React from 'react';
+import React from "react";
 import {
-  HashRouter,
+  BrowserRouter as Router, // <-- changed from HashRouter
   Route,
   Switch,
-  Redirect
-} from 'react-router-dom';
-import { isLoggedIn } from './Helpers';
+  Redirect,
+} from "react-router-dom";
+import { isLoggedIn } from "./Helpers";
 
 import Website from "./app/landing/Website";
-import Login from './app/auth/Login';
-import Register from './app/auth/Register';
-import DashboardLayout from './app/layouts/DashboardLayout';
+import Login from "./app/auth/Login";
+import Register from "./app/auth/Register";
+import DashboardLayout from "./app/layouts/DashboardLayout";
 
 export const PrivateRoute = ({ component: Component, ...rest }) => (
   <Route
     {...rest}
-    render={props =>
+    render={(props) =>
       isLoggedIn() ? (
         <Component {...props} />
       ) : (
-          <Redirect
-            to={{
-              pathname: '/login',
-              state: { from: props.location }
-            }}
-          />
-        )
+        <Redirect
+          to={{
+            pathname: "/login",
+            state: { from: props.location },
+          }}
+        />
+      )
     }
   />
 );
@@ -33,30 +33,30 @@ export const PrivateRoute = ({ component: Component, ...rest }) => (
 export const GuestRoute = ({ component: Component, ...rest }) => (
   <Route
     {...rest}
-    render={props =>
+    render={(props) =>
       !isLoggedIn() ? (
         <Component {...props} />
       ) : (
-          <Redirect
-            to={{
-              pathname: '/dashboard',
-              state: { from: props.location }
-            }}
-          />
-        )
+        <Redirect
+          to={{
+            pathname: "/dashboard",
+            state: { from: props.location },
+          }}
+        />
+      )
     }
   />
 );
 
 const Routes = () => (
-  <HashRouter>
+  <Router>
     <Switch>
-      <Route exact path={'/'} component={Website} />
-      <GuestRoute exact path={'/login'} component={Login} />
-      <GuestRoute exact path={'/register'} component={Register} />
-      <PrivateRoute strict path={'/'} component={DashboardLayout} />
+      <Route exact path="/" component={Website} />
+      <GuestRoute exact path="/login" component={Login} />
+      <GuestRoute exact path="/register" component={Register} />
+      <PrivateRoute strict path="/" component={DashboardLayout} />
     </Switch>
-  </HashRouter>
+  </Router>
 );
 
 export default React.memo(Routes);
