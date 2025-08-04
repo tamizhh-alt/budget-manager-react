@@ -1,3 +1,5 @@
+import { auth } from './firebase';
+
 export const loadState = () => {
   try {
     const serialisedState = localStorage.getItem('expense-tracker-state');
@@ -45,5 +47,11 @@ export const removeItem = (item) => {
 
 // Check if user logged in from localstorage
 export const isLoggedIn = () => {
-  return getItem('access_token') && getItem('token_created') && getItem('expires_in');
+  // Check Firebase auth state first, fallback to localStorage
+  if (auth.currentUser) {
+    return true;
+  }
+  
+  // Fallback check for localStorage (for initial load before Firebase initializes)
+  return getItem('isAuthenticated') === true || getItem('user') !== null;
 };

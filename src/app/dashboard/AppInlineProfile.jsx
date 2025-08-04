@@ -1,18 +1,39 @@
 import React from "react";
 import { useTracked } from "./../../Store";
-import { auth } from "../../firebase";
 
 const AppInlineProfile = () => {
   const [state] = useTracked();
 
-  const user = auth.currentUser;
-  const displayName = user?.displayName || state?.user?.name || "Guest";
-  const role = state?.user?.role || "guest";
+  // Use state.user which is populated by Firebase onAuthStateChanged
+  const user = state?.user;
+  const displayName = user?.name || user?.email?.split('@')[0] || "Guest";
+  const role = user?.role || "user";
+
+  // Don't render if no user data is available
+  if (!user) {
+    return (
+      <div className="profile">
+        <div>
+          <img src={require("./../../assets/user.png")} alt="user-profile" />
+        </div>
+        <a href="#" className="profile-link" onClick={(e) => e.preventDefault()}>
+          <span className="username">
+            <span>Loading...</span>
+            <br />
+            <small style={{ color: "#aaa" }}>guest</small>
+          </span>
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="profile">
       <div>
-        <img src={require("./../../assets/user.png")} alt="user-profile" />
+        <img 
+          src={user.photoURL || require("./../../assets/user.png")} 
+          alt="user-profile" 
+        />
       </div>
       <a href="#" className="profile-link" onClick={(e) => e.preventDefault()}>
         <span className="username">

@@ -60,6 +60,17 @@ const menu = [
 const DashboardLayout = (props) => {
 
   const [state] = useTracked();
+  
+  // Add safety check for user
+  if (!state.user && !state.isAuthenticated) {
+    return (
+      <div className="p-grid p-nogutter p-align-center p-justify-center" style={{ height: "100vh" }}>
+        <div className="p-col-12 text-center">
+          <h3>Loading...</h3>
+        </div>
+      </div>
+    );
+  }
 
   const [staticMenuInactive, setStaticMenuInactive] = useState(false);
   const [overlayMenuActive, setOverlayMenuActive] = useState(false);

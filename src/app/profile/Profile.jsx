@@ -23,10 +23,31 @@ const passwordValidationSchema = yup.object().shape({
 const Profile = (props) => {
 
   const [state] = useTracked();
-  const { register, handleSubmit, errors, reset } = useForm({
-    validationSchema: passwordValidationSchema
+  const { 
+    register, 
+    handleSubmit, 
+    formState: { errors }, 
+    reset 
+  } = useForm({
+    resolver: yupResolver(passwordValidationSchema)
   });
   const [submitting, setSubmitting] = useState(false);
+  
+  // Add user safety check
+  const user = state?.user;
+  
+  if (!user) {
+    return (
+      <div>
+        <Helmet title="Profile" />
+        <div className="p-grid p-nogutter p-align-center p-justify-center" style={{ height: "50vh" }}>
+          <div className="p-col-12 text-center">
+            <h3>Loading profile...</h3>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const submitChangePassword = (data) => {
     setSubmitting(true);
@@ -118,7 +139,7 @@ const Profile = (props) => {
                 Name:
                 </h3>
               <h3 className="color-highlight p-col-6">
-                {state.user.name}
+                {user.name || 'N/A'}
               </h3>
             </div>
             <div className="p-grid p-nogutter p-justify-between">
@@ -126,7 +147,7 @@ const Profile = (props) => {
                 Email:
                 </h3>
               <h3 className="color-highlight p-col-6">
-                {state.user.email}
+                {user.email || 'N/A'}
               </h3>
             </div>
 

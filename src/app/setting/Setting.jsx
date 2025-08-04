@@ -20,6 +20,22 @@ const Setting = (props) => {
   const [state, setState] = useTracked();
   const [visible, setVisible] = useState(false);
   const [t, i18n] = useTranslation();
+  
+  // Add user safety check
+  const user = state?.user;
+  
+  if (!user) {
+    return (
+      <div>
+        <Helmet title="Settings" />
+        <div className="p-grid p-nogutter p-align-center p-justify-center" style={{ height: "50vh" }}>
+          <div className="p-col-12 text-center">
+            <h3>Loading settings...</h3>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const toggleLanguage = useCallback(() => {
     i18n.language === 'en' ? i18n.changeLanguage('bn') : i18n.changeLanguage('en');
@@ -27,17 +43,34 @@ const Setting = (props) => {
   }, [i18n]);
 
   const submitSetting = () => {
-    axios.put(currencyApiEndpoints.currency + '/' + state.user.id, JSON.stringify({ currency_id: state.currentCurrency.id }))
+    if (!state.currentCurrency?.id) {
+      messages.show({
+        severity: 'error',
+        detail: 'Please select a currency first.',
+        sticky: true,
+        closable: true,
+        life: 5000
+      });
+      return;
+    }
+    
+    axios.put(currencyApiEndpoints.currency + '/' + user.uid, JSON.stringify({ currency_id: state.currentCurrency.id }))
       .then(response => {
         console.log('success', response.data);
 
         if (response.status === 200) {
 
-          setState(prev => ({ ...prev, currency_id: response.data.request.currency_id }));
+          setState(prev => ({ 
+            ...prev, 
+            user: {
+              ...prev.user,
+              currency_id: response.data?.request?.currency_id || state.currentCurrency.id
+            }
+          }));
 
           messages.show({
             severity: 'success',
-            detail: 'Current currency set to ' + state.currentCurrency.currency_code + ' (' + state.currentCurrency.currency_name + ').',
+            detail: 'Current currency set to ' + (state.currentCurrency.currency_code || 'Unknown') + ' (' + (state.currentCurrency.currency_name || 'Unknown') + ').',
             sticky: false,
             closable: false,
             life: 5000
@@ -102,7 +135,7 @@ const Setting = (props) => {
                 Current Currency:
                 </h3>
               <h3 className="color-highlight p-col-4">
-                {state.currencies.length === 0 ? 'loading' : state.currentCurrency.currency_code + ' (' + state.currentCurrency.currency_name + ')'}
+                {state.currencies.length === 0 ? 'loading' : (state.currentCurrency?.currency_code || 'USD') + ' (' + (state.currentCurrency?.currency_name || 'US Dollar') + ')'}
               </h3>
               <h3>
                 <Button label="Change" icon="pi pi-refresh"

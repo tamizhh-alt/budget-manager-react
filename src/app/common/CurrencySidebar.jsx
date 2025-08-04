@@ -21,17 +21,18 @@ const CurrencySidebar = (props) => {
       axios.get(currencyApiEndpoints.currency, {})
         .then(response => {
           // console.log(response.data);
-          if (response.data.data.length > 0) {
-            let currency = response.data.data.find(el => el.id === state.user.currency_id ? el : null);
+          if (response.data?.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
+            let currency = response.data.data.find(el => el.id === state.user?.currency_id) || response.data.data[0];
 
             setState(prev => ({ ...prev, currencies: response.data.data, currentCurrency: currency }));
           }
         })
         .catch(error => {
           console.log(error);
+          setState(prev => ({ ...prev, currencies: [] }));
         });
     }
-  }, [state.currencies.length]);
+  }, [state.currencies.length, state.user?.currency_id, setState]);
 
   return (
     <Sidebar visible={props.visible} position="right" onHide={props.onHide} style={{ width: '345px' }}>

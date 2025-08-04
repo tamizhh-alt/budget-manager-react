@@ -45,27 +45,8 @@ const Login = () => {
         data.password
       );
 
-      const tokenResult = await result.user.getIdTokenResult();
-
-      const userData = {
-        access_token: tokenResult.token,
-        token_created: tokenResult.issuedAtTime,
-        expires_in: tokenResult.expirationTime,
-        email: result.user.email,
-        name: result.user.displayName || result.user.email.split("@")[0], // fallback
-        uid: result.user.uid,
-      };
-
-      localStorage.setItem(
-        "access_token",
-        JSON.stringify(userData.access_token)
-      );
-      localStorage.setItem(
-        "token_created",
-        JSON.stringify(userData.token_created)
-      );
-      localStorage.setItem("expires_in", JSON.stringify(userData.expires_in));
-      localStorage.setItem("user", JSON.stringify(userData));
+      // Firebase auth state will be handled by onAuthStateChanged in App.jsx
+      // No need to manually set localStorage here
 
       messages.show({
         severity: "success",
